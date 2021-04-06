@@ -1,0 +1,32 @@
+{
+  "name": "emoji-api",
+  "version": "1.0.0",
+  "description": "😏 Easy api for up to date unicode emojis...",
+  "main": "index.js",
+  "scripts": {
+    "download": "node scripts/download.js",
+    "build": "node scripts/build.js && node scripts/generate.js",
+    "test": "node test/test.js | tap-spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/https-github-com-steversonTong/emoji-api.git"
+  },
+  "keywords": [
+    "emoji"
+  ],
+  "author": "Babel",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/https-github-com-steversonTong/emoji-api/issues"
+  },
+  "homepage": "https://github.com/https-github-com-steversonTong/emoji-api#readme",
+  "devDependencies": {
+    "fast-html-parser": "^1.0.1"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "path": "^0.12.7"
+  }
+}
