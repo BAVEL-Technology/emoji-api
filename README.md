@@ -1,5 +1,6 @@
 # emoji-api
 😏 Easy api for up to date unicode emojis...
+:rage1:
 
 ```
 $ npm run download
