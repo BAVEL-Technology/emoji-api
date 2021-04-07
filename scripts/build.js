@@ -3,6 +3,7 @@ const emojiKeywords = require('../emojis/emoji_keywords.json')
 const orderedEmojiData = fs.readFileSync('../emojis/emoji-order.txt', 'utf-8')
 const groupedEmojiData = fs.readFileSync('../emojis/emoji-group.txt', 'utf-8')
 const emojiPrevBase = require('../emojis/data-by-emoji-base.json')
+const emojiCategories = require('../emojis/data-by-group.json')
 const VARIATION_16 = String.fromCodePoint(0xfe0f)
 const SKIN_TONE_VARIATION_DESC = /\sskin\stone(?:,|$)/
 const HAIR_STYLE_VARIATION_DESC = /\shair(?:,|$)/
@@ -141,6 +142,13 @@ orderedEmojiData.split('\n').forEach((line, i) => {
   //   }
   // ]
   const {groups: {code, version, emoji, name, desc}} = match
+  let categories = Object.keys(emojiCategories)
+  let findEmojiCategory = []
+  categories.forEach((cat) => {
+    let filtered = emojiCategories[cat].filter((emoji) => emoji.slug == slugify(name))
+    if (filtered.length) findEmojiCategory.push(cat)
+  })
+  if (findEmojiCategory.length) console.log(findEmojiCategory)
   let keys = Object.keys(emojiKeywords)
   let arrayOfSlugs = keys.map((key) => emojiKeywords[key][0])
   let arrayOfKeywords = arrayOfSlugs.filter((slug) => slug === slugify(name))
@@ -152,6 +160,7 @@ orderedEmojiData.split('\n').forEach((line, i) => {
     ...match.groups,
     slug: slugify(name),
     slug_desc: desc ? slugify(name + '_' + desc) : slugify(name),
+    category: findEmojiCategory.length ? findEmojiCategory[0] : [],
     keywords: arrayOfKeywords.length ? emojiKeywords[emojiKey] : []
   })
   const codes = code.split(' ')
