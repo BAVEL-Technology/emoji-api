@@ -13,7 +13,7 @@ const dataController = require("../../controllers/dataController");
 
 //Find one emoji by name
 //Query string parameters include: skin-tone
-router.route("/:emoji")
+router.route("/")
   .get(dataController.find)
 
 //List all categories

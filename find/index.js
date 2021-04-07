@@ -18,7 +18,7 @@ let returnV;
 
 const find = async (req, res) => {
   returnedEmojis = emojis.filter((emoji) => {
-    return emoji.name === 'man' && emoji.desc === 'medium-dark skin tone, blond hair'
+    if (emoji.keywords) return emoji.keywords.includes(':)')
   })
 
   return returnedEmojis
@@ -29,7 +29,7 @@ for (let key in used) {
   console.log(`${key} ${Math.round(used[key] / 1024 / 1024 * 100) / 100} MB`);
 }
 
-var start = process.hrtime()
+var start = new Date().getTime();
 console.log(start)
 find();
 var end = new Date().getTime();

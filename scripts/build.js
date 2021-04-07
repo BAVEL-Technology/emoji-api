@@ -1,6 +1,8 @@
 const fs = require('fs')
+const emojiKeywords = require('../emojis/emoji_keywords.json')
 const orderedEmojiData = fs.readFileSync('../emojis/emoji-order.txt', 'utf-8')
 const groupedEmojiData = fs.readFileSync('../emojis/emoji-group.txt', 'utf-8')
+const emojiPrevBase = require('../emojis/data-by-emoji-base.json')
 const VARIATION_16 = String.fromCodePoint(0xfe0f)
 const SKIN_TONE_VARIATION_DESC = /\sskin\stone(?:,|$)/
 const HAIR_STYLE_VARIATION_DESC = /\shair(?:,|$)/
@@ -139,7 +141,19 @@ orderedEmojiData.split('\n').forEach((line, i) => {
   //   }
   // ]
   const {groups: {code, version, emoji, name, desc}} = match
-  allEmojis.push(match.groups)
+  let keys = Object.keys(emojiKeywords)
+  let arrayOfSlugs = keys.map((key) => emojiKeywords[key][0])
+  let arrayOfKeywords = arrayOfSlugs.filter((slug) => slug === slugify(name))
+  let emojiKey
+  if (arrayOfKeywords.length) {
+    emojiKey = emojiPrevBase.filter((emoji) => emoji.slug === arrayOfKeywords[0])[0].emoji
+  }
+  allEmojis.push({
+    ...match.groups,
+    slug: slugify(name),
+    slug_desc: desc ? slugify(name + '_' + desc) : slugify(name),
+    keywords: arrayOfKeywords.length ? emojiKeywords[emojiKey] : []
+  })
   const codes = code.split(' ')
   if(!baseEmojis.includes(String.fromCodePoint(parseInt(codes[0].split('+')[1], 16)))) baseEmojis.push(String.fromCodePoint(parseInt(codes[0].split('+')[1], 16)))
   const isSkinToneVariation = desc && !!desc.match(SKIN_TONE_VARIATION_DESC) //Check if skin tone is in description
