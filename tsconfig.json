@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "declaration": true,
+    "noImplicitAny": true,
+    "removeComments": true,
+    "experimentalDecorators": true,
+    "rootDir": ".",
+    "sourceMap": true,
+    "listFiles": true,
+    "newLine": "LF",
+    "noEmitOnError": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+  },
+  "exclude": [
+    "./node_modules/**/*.ts",
+  ]
+}
