@@ -1,10 +1,11 @@
 {
   "name": "emoji-api",
   "version": "1.0.0",
+  "type": "module",
   "description": "😏 Easy api for up to date unicode emojis...",
   "scripts": {
     "download": "npx ts-node scripts/download.ts",
-    "build": "npx ts-node scripts/build.ts",
+    "build": "tsc scripts/build.ts --resolveJsonModule --allowSyntheticDefaultImports --module ES2015 --target ES2015 --moduleResolution node && node --experimental-specifier-resolution=node scripts/build.js",
     "test": "node test/test.js | tap-spec"
   },
   "repository": {
@@ -21,20 +22,28 @@
   },
   "homepage": "https://github.com/https-github-com-steversonTong/emoji-api#readme",
   "devDependencies": {
+    "@types/jsdom": "^16.2.13",
     "@types/node": "^16.11.2",
+    "@types/request": "^2.48.7",
     "fast-html-parser": "^1.0.1",
     "ts-node": "^10.3.1",
     "tslib": "^2.3.1"
   },
   "dependencies": {
     "@netlify/functions": "^0.7.2",
+    "@types/follow-redirects": "^1.13.1",
+    "axios": "^0.23.0",
     "chalk": "^4.1.2",
     "cors": "^2.8.5",
+    "es6-request": "^3.0.5",
     "express": "^4.17.1",
+    "follow-redirects": "^1.14.4",
     "gm": "^1.23.1",
     "gm-base64": "^1.1.1",
+    "jsdom": "^18.0.0",
     "ora": "^6.0.1",
     "path": "^0.12.7",
+    "request": "^2.88.2",
     "typescript": "^4.4.4",
     "uuid": "^8.3.2"
   },

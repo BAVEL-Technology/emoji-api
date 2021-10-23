@@ -19,10 +19,6 @@ const files: { [key: string]: string } = {
   'emoji-counts.html': `https://unicode.org/emoji/charts-${version}/emoji-counts.html`,
   // Emoji list
   'emoji-list.html': `https://unicode.org/emoji/charts-${version}/emoji-list.html`,
-  // Emoji images
-  'emoji-images.html': `https://unicode.org/emoji/charts-${version}/full-emoji-list.html`,
-  // Emoji images for skin tone
-  'emoji-images-skin-tone.html': `https://unicode.org/emoji/charts-${version}/full-emoji-modifiers.html`
 }
 
 console.log(chalk.cyan(`😼 Fetching emoji data from unicode for version ${version}.`))
