@@ -8,6 +8,11 @@ export type Groups = {
   }
 }
 
+export type KeywordMap = {
+  [key: string]: string[]
+}
+
+
 export type FullEmojiMeta<E> = {
   emoji?: E | null,
   name?: string,
