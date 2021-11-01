@@ -1,10 +1,10 @@
 import { Handler } from "@netlify/functions"
-import keywords from '../../emojis/data-emoji-keywords.json'
 import emojis from '../../emojis/data-by-emoji.json'
-import https from 'https'
-import { EmojiData, FullEmojiMeta, KeywordMap } from "../../types"
+import { EmojiData, FullEmojiMeta } from "../../types"
 import path from 'path'
 import fs from 'fs'
+import axios from "axios"
+
 const handler: Handler = async (event) => {
   try {
     const style = event.queryStringParameters?.style || 'Twitter'
@@ -12,7 +12,7 @@ const handler: Handler = async (event) => {
     console.log(emoji)
     console.log((emojis as EmojiData<FullEmojiMeta<null>>)[emoji])
 
-    const path2 = path.join(process.cwd(), './images/Apple/alien.png')
+    const path2 = path.join(process.cwd(), './images/Apple/drooling_face.png')
     const pngBuffer = fs.readFileSync(path2)
     // let response;
     // await (() => {

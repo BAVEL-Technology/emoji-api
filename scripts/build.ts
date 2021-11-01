@@ -1,3 +1,4 @@
+// Required Modules
 import * as fs from 'fs'
 import * as https from 'https'
 import axios from 'axios'
@@ -5,23 +6,19 @@ import * as jsdom from 'jsdom'
 import chalk from 'chalk'
 import ora from 'ora'
 import { AllEmojiData, EmojiData, FullEmojiMeta, Groups } from '../types'
+import { getEmojiImagesModule, slugify } from './utils'
 
+// Emoji Data as Text/HTML files from Unicode
 const orderedEmojiData = fs.readFileSync('emojis/emoji-order.txt', 'utf-8')
 const groupedEmojiData = fs.readFileSync('emojis/emoji-group.txt', 'utf-8')
 const emojiListHtml = fs.readFileSync('emojis/emoji-list.html', 'utf-8')
+
+// Variation 16 Unicode Char
 const VARIATION_16: string = String.fromCodePoint(0xfe0f)
+
+// Regex for extracting emoji data from HTML
 const SKIN_TONE_VARIATION_DESC: RegExp = /\sskin\stone(?:,|$)/
 const HAIR_STYLE_VARIATION_DESC: RegExp = /\shair(?:,|$)/
-
-const orderedEmoji: string[] = []
-const dataByEmoji: EmojiData<FullEmojiMeta<null>> = {}
-const dataByGroup: Groups = {}
-const emojiComponents: { [key: string ]: string } = {}
-const keywords: { [key: string]: string[] } = {}
-const keywordsByName: { [key: string]: string[] } = {}
-const keywordMap: { [key: string]: string[] } = {}
-const emojiCategories: { [key: string]: string[] } = {}
-const emojiSubCategories: { [key: string]: string[] } = {}
 const GROUP_REGEX: RegExp = /^#\sgroup:\s(?<name>.+)/
 const SUB_GROUP_REGEX: RegExp = /^#\ssubgroup:\s(?<name>.+)/
 const EMOJI_REGEX: RegExp = 
@@ -31,12 +28,29 @@ const ORDERED_EMOJI_REGEX: RegExp =
 const HTML_REGEX: RegExp = /img alt='(?<emoji>.+?)'/
 const BASE64_REGEX: RegExp = /img alt='(?<emoji>.+?)'.+?src='(?<base64>.+?)'/
 
+// Global variables for the build
+// An array of emojis w/o skin tone variations 
+// or hair style variations
+const orderedEmoji: string[] = []
+// Object of emoji data, emoji is the key
+const dataByEmoji: EmojiData<FullEmojiMeta<null>> = {}
+// Object of emoji data, group is the key and subgroup are sub keys.
+// An array of objects is the value, emoji is includeded in the object
+const dataByGroup: Groups = {}
+// An object of skin tone variation and hair style variation
+const emojiComponents: { [key: string ]: string } = {}
+const keywords: { [key: string]: string[] } = {}
+const keywordsByName: { [key: string]: string[] } = {}
+const keywordMap: { [key: string]: string[] } = {}
+const emojiCategories: { [key: string]: string[] } = {}
+const emojiSubCategories: { [key: string]: string[] } = {}
+const spinner = ora('🤓 Starting Emoji ETL Pipeline...')
+spinner.color = 'cyan'
+
+// The function to build the emoji data
 const build = async () => {
   let currentGroup: string,
   currentSubGroup: string = ''
-
-  const spinner = ora('🤓 Starting Emoji ETL Pipeline...')
-  spinner.color = 'cyan'
   spinner.start()
   const groupedEmojiDataByLine: string[] = groupedEmojiData.split('\n')
   groupedEmojiDataByLine.forEach((line, i) => {
@@ -62,7 +76,8 @@ const build = async () => {
             sub_group: currentSubGroup,
             emoji_version: emojiversion,
             unicode_version: null,
-            skin_tone_support: null
+            skin_tone_support: null,
+            shortcodes: {}
           }
           emojiCategories[currentGroup].push(emoji)
           emojiSubCategories[currentSubGroup].push(emoji)
@@ -72,14 +87,6 @@ const build = async () => {
       }
     }
   })
-  // Returns machine readable emoji short code
-  function slugify(str: string, deliminator: string = '_'): string {
-    return str.normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/\(.+\)/g, '')
-      .trim().replace(/[\W|_]+/g, deliminator)
-      .toLowerCase()
-  }
 
   spinner.text = '🤓 Processing emoji keywords'
   const rChars: string[] = emojiListHtml.split(`<td class='rchars'>`)
@@ -182,8 +189,8 @@ const build = async () => {
       ...dataByEmoji[emoji]
     })
   }
-
-  const getEmojiImages = async (slug: string, emoji:string, index: number) => {
+  let retrys: { [key: string]: number };
+  const getEmojiImages = async (slug: string, emoji:string, name: string, index: number) => {
     try {
       const res: { data: any } = await axios.get(`https://emojipedia.org/${encodeURI(slug)}`)
       spinner.text = `🤓 Processing emoji ${emoji} image ${index + 1} of ${allEmojis.length}`
@@ -191,42 +198,60 @@ const build = async () => {
         spinner.text = `🤓 Couldn't get html for ${emoji} image ${index + 1} of ${allEmojis.length}`
       } else {
         const dom = new jsdom.JSDOM(res.data)
-        const listItems = dom.window.document
-          .querySelector('.vendor-list')
-          .querySelectorAll('ul')[0]
-          .querySelectorAll('li')
-        for (let i = 0; i < listItems.length; i++) {
-          const node = listItems[i]
-          const style = node.querySelector('.vendor-container')
-            .querySelector('.vendor-info')
-            ?.querySelector('h2')
-            ?.querySelector('a')?.textContent
-          if (style) {
-            spinner.text = `🤓 Processing emoji style ${style} for ${emoji} image ${index + 1} of ${allEmojis.length}`
-            const image = node.querySelector('.vendor-container')
-              .querySelector('.vendor-image')
-              .querySelector('img').getAttribute('srcset').split(' ')[0]
-            fs.mkdirSync(`images/${style}`, { recursive: true })
-            https.get(image, (res_1) => {
-              const data: any = []
-              res_1.on('data', function (chunk) {
-                data.push(chunk)
-              }).on('end', function () {
-                var buffer = Buffer.concat(data)
-                fs.writeFile(`images/${style}/${dataByEmoji[emoji].slug}.png`, buffer.toString('base64'), 'base64', function (err) {
-                  if (err)
-                    console.log(chalk.red(`\n👹 ${emoji}: ${dataByEmoji[emoji].name} ` + err.message))
-                })
-              })
-            })
+        const shortCodeList = dom.window.document
+          ?.querySelector('.shortcodes')
+          ?.querySelectorAll('li')
+        if (shortCodeList) {
+          for (let i = 0; i < shortCodeList.length; i++) {
+            const eData = dataByEmoji[emoji] ? dataByEmoji[emoji] : dataByEmoji[emoji + VARIATION_16]
+            const shortCode = shortCodeList[i].querySelector('.shortcode').textContent
+            const lib = shortCodeList[i].querySelectorAll('a')
+            let libs = []
+            for (let j = 0; j < lib.length; j++) {
+              libs.push(lib[j].textContent)
+            }
+            if (libs.includes('Slack')) {
+              eData.shortcodes.slack = shortCode
+            } 
+            if (libs.includes('Github')) { 
+              eData.shortcodes.github = shortCode
+            } 
+            if (libs.includes('Emojipedia')) {
+              eData.shortcodes.emojipedia = shortCode
+            }
           }
         }
+        await getEmojiImagesModule({
+          dom,
+          emoji,
+          name,
+          index,
+          spinner,
+          allEmojis,
+          dataByEmoji,
+        })
       }
     } catch (err) {
       if (err.message.includes('404')) {
-        await getEmojiImages(emoji, emoji, index)
+        await getEmojiImages(emoji, emoji, name, index)
       } else {
-        console.log(chalk.red(`\n👹 ${emoji}: ${dataByEmoji[emoji].name} ` + err.message))
+        console.log(
+          chalk.red(
+            `\n👹 ${emoji}: ${dataByEmoji[emoji]?.name} ` + 
+            err.message + '. Trying again...'
+          )
+        )
+        retrys[emoji] = emoji in retrys ? retrys[emoji] + 1 : 1
+        if (emoji in retrys && retrys[emoji] < 3) {
+          await getEmojiImages(slug, emoji, name, index)
+        } else {
+          console.log(
+            chalk.red(
+              `\n👹 ${emoji}: ${dataByEmoji[emoji]?.name} ` + 
+              err.message + '. Done trying...'
+            )
+          )
+        }
       }
     }
   }
@@ -252,7 +277,7 @@ const build = async () => {
       let chunkIndex = i * 100
       await Promise.all(chunkedEmojijs[i]
         .map((emoji: FullEmojiMeta<string>, index: number) => 
-          getEmojiImages(slugify(emoji.name, '-'), emoji.emoji, chunkIndex + index)
+          getEmojiImages(slugify(emoji.name, '-'), emoji.emoji, emoji.name, chunkIndex + index)
         )
       )
     }
@@ -260,6 +285,31 @@ const build = async () => {
 
   await promiseToGetEmojiImages()
 
+  const shortCodeMap = () => {
+    const shortCodeMap: {
+      slack: {
+        [key: string]: string
+      },
+      github: {
+        [key: string]: string
+      },
+      emojipedia: {
+        [key: string]: string
+      }
+    } = {
+      slack: {},
+      github: {},
+      emojipedia: {},
+    }
+    for (const emoji of Object.keys(dataByEmoji)) {
+      const { shortcodes } = dataByEmoji[emoji]
+      if (shortcodes.slack) shortCodeMap.slack[shortcodes.slack] = emoji
+      if (shortcodes.github) shortCodeMap.github[shortcodes.github] = emoji
+      if (shortcodes.emojipedia) shortCodeMap.emojipedia[shortcodes.emojipedia] = emoji
+    }
+
+    return shortCodeMap
+  }
   spinner.text = '🤓 Writing JSON files...'
   fs.writeFileSync('emojis/data-by-emoji.json', JSON.stringify(dataByEmoji, null, 2))
   fs.writeFileSync('emojis/data-by-emoji-base.json', JSON.stringify(allEmojis, null, 2))
@@ -267,6 +317,7 @@ const build = async () => {
   fs.writeFileSync('emojis/data-ordered-emoji.json', JSON.stringify(orderedEmoji, null, 2))
   fs.writeFileSync('emojis/data-emoji-components.json', JSON.stringify(emojiComponents, null, 2))
   fs.writeFileSync('emojis/data-emoji-keywords.json', JSON.stringify(keywordMap, null, 2))
+  fs.writeFileSync('emojis/data-emoji-shortcodes.json', JSON.stringify(shortCodeMap(), null, 2))
   spinner.succeed('🤓 Done!')
 }
 

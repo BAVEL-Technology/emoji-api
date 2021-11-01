@@ -12,8 +12,20 @@ export type KeywordMap = {
   [key: string]: string[]
 }
 
+export type SearchResultOptions = {
+  query?: string,
+  fuzziness?: number,
+  version?: number,
+  group?: string,
+  subGroup?: string,
+  limit?: number,
+  offset?: number,
+  skinTone?: string,
+  hairStyle?: string
+}
 
 export type FullEmojiMeta<E> = {
+  score?: number,
   emoji?: E | null,
   name?: string,
   slug?: string,
@@ -25,7 +37,10 @@ export type FullEmojiMeta<E> = {
   skin_tone_support_unicode_version?: string,
   hair_style_support?: boolean,
   hair_style_support_unicode_version?: string,
-  keywords?: string[]
+  keywords?: string[],
+  shortcodes?: {
+    [key: string]: string
+  }
 }
 
 export type AllEmojiData = {

@@ -1,7 +1,6 @@
 {
   "name": "emoji-api",
   "version": "1.0.0",
-  "type": "module",
   "description": "😏 Easy api for up to date unicode emojis...",
   "scripts": {
     "download": "npx ts-node scripts/download.ts",
